@@ -1,0 +1,31 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+ branches:
+   exclude:
+     - releases/*
+
+pool:
+  vmImage: ubuntu-latest
+
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+stages:
+- stage: build_ui_project
+  jobs:
+  - job: build_ui_project_job
+    steps:
+      - template: templates/build_steps.yml  # Template reference
+
+- stage: release_ui_project_dev
+  displayName: Release UI project to DEV
+  jobs:
+  - job: release_ui_project_job_dev
+    steps:
+    - template: templates/release_steps.yml

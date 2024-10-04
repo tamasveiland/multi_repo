@@ -1,0 +1,63 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+# trigger:
+# - main
+
+# # this pipeline will be triggered by another pipeline
+# # https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/resources-pipelines-pipeline?view=azure-pipelines-2022
+# resources:
+#   pipelines:
+#   - pipeline: ui-pipeline   # Required as first property. ID of the pipeline resource.
+#     source: "UI CICD" # Name of the pipeline that produces the artifact.
+#     # project: Trigger-Pipeline-From-Another-Pipeline # Required only if the source pipeline is in another project
+#     trigger: # Specify none to disable, true to include all branches, or use the full syntax as described in the following examples.
+#       branches:
+#       - main
+
+parameters:
+- name: deploy_ui # Required as first property.
+  displayName: Deploy UI Component # Human-readable name for the parameter.
+  type: boolean
+  default: true
+
+resources:
+ repositories:
+  - repository: ui_repo # Required as first property. Alias for the repository.
+    #endpoint: string # ID of the service endpoint connecting to this repository.
+    trigger: # none | trigger | [ string ] # CI trigger for this repository, no CI trigger if skipped (only works for Azure Repos).
+      branches:
+       include:
+         - releases/*
+    name: SWF2.UI # repository name (format depends on 'type'; does not accept variables).
+    type: git # Type of repository: git, github, githubenterprise, and bitbucket.
+    #ref: string # ref name to checkout; defaults to 'refs/heads/main'. The branch checked out by default whenever the resource trigger fires. Does not accept variables.
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: build_ui_project
+  jobs:
+  - job: build_ui_project_job
+    steps:
+      - template: .pipelines/templates/build_steps.yml@ui_repo  # Template reference
+
+- stage: release_ui_project_dev
+  dependsOn: [release_core_project_dev]
+  condition: and(succeeded(), eq(${{ parameters.deploy_ui }} , true))
+  displayName: Release UI project to DEV
+  jobs:
+  - job: release_ui_project_job_dev
+    steps:
+    - template: .pipelines/templates/release_steps.yml@ui_repo  # Template reference
+
+- stage: release_core_project_dev
+  dependsOn: []
+  displayName: Release Core project to DEV
+  jobs:
+  - job: release_core_project_job_dev
+    steps:
+    - template: .pipelines/templates/release_steps.yml@ui_repo  # Template reference
